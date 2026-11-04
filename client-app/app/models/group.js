@@ -1,0 +1,37 @@
+import { A } from "@ember/array";
+import { reads } from "@ember/object/computed";
+import Message from "client-app/models/message";
+import EmberObject, { computed } from "@ember/object";
+import { ajax } from "client-app/lib/utilities";
+
+export default class Group extends EmberObject {
+  selected = false;
+  showCount = true;
+
+  @reads("regex") key;
+
+  @computed("messages.[]")
+  get displayMessage() {
+    return this.messages[0]?.message;
+  }
+
+  init() {
+    super.init(...arguments);
+    const messages = A(this.messages.map((m) => Message.create(m)));
+    this.set("messages", messages);
+  }
+
+  @computed
+  get glyph() {
+    return "clone";
+  }
+
+  @computed
+  get prefix() {
+    return "far";
+  }
+
+  solveAll() {
+    return ajax("/solve-group", { type: "POST", data: { regex: this.regex } });
+  }
+}

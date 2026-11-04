@@ -1,0 +1,129 @@
+import { gt } from "@ember/object/computed";
+import EmberObject, { computed } from "@ember/object";
+import { tracked } from "@glimmer/tracking";
+import { ajax } from "client-app/lib/utilities";
+import { getRootPath } from "client-app/lib/preload";
+
+export default class Message extends EmberObject {
+  @tracked env = null;
+  @tracked protected = false;
+
+  MAX_LEN = 200;
+
+  @gt("count", 1) showCount;
+
+  @computed("MAX_LEN", "expanded", "message.length")
+  get hasMore() {
+    return !this.expanded && this.message.length > this.MAX_LEN;
+  }
+
+  @computed("key")
+  get shareUrl() {
+    return `${getRootPath()}/show/${this.key}`;
+  }
+
+  @computed("MAX_LEN", "expanded", "message.length")
+  get displayMessage() {
+    let message = this.message;
+
+    if (!this.expanded && this.message.length > this.MAX_LEN) {
+      message = this.message.substr(0, this.MAX_LEN);
+    }
+    return message;
+  }
+
+  get canSolve() {
+    const appVersion = Array.isArray(this.env)
+      ? this.env
+          .map((e) => e.application_version)
+          .filter(Boolean)
+          .join("")
+      : this.env && this.env.application_version;
+    return appVersion && this.backtrace && this.backtrace.length > 0;
+  }
+
+  @computed("severity")
+  get rowClass() {
+    switch (this.severity) {
+      case 0:
+        return "debug";
+      case 1:
+        return "info";
+      case 2:
+        return "warn";
+      case 3:
+        return "error";
+      case 4:
+        return "fatal";
+      default:
+        return "unknown";
+    }
+  }
+
+  @computed("severity")
+  get glyph() {
+    switch (this.severity) {
+      case 0:
+        return "";
+      case 1:
+        return "";
+      case 2:
+        return "exclamation-circle";
+      case 3:
+        return "times-circle";
+      case 4:
+        return "times-circle";
+      default:
+        return "question-circle";
+    }
+  }
+
+  get prefix() {
+    return "fas";
+  }
+
+  @computed("severity")
+  get klass() {
+    switch (this.severity) {
+      case 0:
+        return "";
+      case 1:
+        return "";
+      case 2:
+        return "warning";
+      case 3:
+        return "error";
+      case 4:
+        return "fatal";
+      default:
+        return "unknown";
+    }
+  }
+
+  async fetchEnv() {
+    const env = await ajax(`/fetch-env/${this.key}.json`);
+    this.set("env", env);
+  }
+
+  expand() {
+    this.set("expanded", true);
+  }
+
+  solve() {
+    return ajax(`/solve/${this.key}`, { type: "PUT" });
+  }
+
+  destroy() {
+    return ajax(`/message/${this.key}`, { type: "DELETE" });
+  }
+
+  async protect() {
+    await ajax(`/protect/${this.key}`, { type: "PUT" });
+    this.set("protected", true);
+  }
+
+  async unprotect() {
+    await ajax(`/unprotect/${this.key}`, { type: "DELETE" });
+    this.set("protected", false);
+  }
+}

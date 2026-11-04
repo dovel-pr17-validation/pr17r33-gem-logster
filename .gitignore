@@ -1,0 +1,7 @@
+Gemfile.lock
+/pkg/
+/log/
+/assets/manifest.json
+/assets/logster-config.json
+assets/javascript/*.js
+assets/stylesheets/*.css
